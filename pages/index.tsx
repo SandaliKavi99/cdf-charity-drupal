@@ -13,8 +13,7 @@ interface IndexPageProps {
   country: string;
 }
 
-
-export async function getCountryFromIP(ip) {
+export async function getCountryFromIP(ip: string) {
   try {
     const response = await axios.get(`https://ipinfo.io/${ip}/country`);
     const country = response.data.trim();
@@ -26,7 +25,6 @@ export async function getCountryFromIP(ip) {
 }
 
 export default function IndexPage({ nodes, country }: IndexPageProps) {
- console.log(country)
   return (
     <Layout>
       {country ? (
@@ -53,12 +51,12 @@ export default function IndexPage({ nodes, country }: IndexPageProps) {
 export async function getStaticProps(
   context
 ): Promise<GetStaticPropsResult<IndexPageProps>> {
+
   let country = '';
 
   try {
-    const response = await fetch('https://api64.ipify.org?format=json');
-    const data = await response.json();
-    const ip = data.ip;
+    const { data } = await axios.get(`http://localhost:3000/api/get-ip`);
+    let ip = data.ip;
     country = await getCountryFromIP(ip);
   } catch (error) {
     console.error('Error fetching IP or country:', error);
@@ -70,7 +68,7 @@ export async function getStaticProps(
     include: "field_image,uid,field_tags",
     sort: "-created",
   };
-  
+
   if (country) {
     filterParams["filter[field_tags.name]"] = country;
   }

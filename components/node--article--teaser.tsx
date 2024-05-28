@@ -9,7 +9,7 @@ interface NodeArticleTeaserProps {
 }
 
 export function NodeArticleTeaser({ node, ...props }: NodeArticleTeaserProps) {
-  console.log(node)
+  // console.log(node)
   return (
     <article {...props}>
       <Link href={node.path.alias} className="no-underline hover:text-blue-600">
