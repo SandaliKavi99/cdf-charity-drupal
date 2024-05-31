@@ -1,37 +1,82 @@
-import Head from "next/head"
-import { GetStaticPropsResult } from "next"
+import { GetServerSideProps, GetServerSidePropsResult } from 'next'
 import { DrupalNode } from "next-drupal"
-import axios from 'axios';
-
-
 import { drupal } from "lib/drupal"
 import { Layout } from "components/layout"
 import { NodeArticleTeaser } from "components/node--article--teaser"
 
+const timeZoneToCountryMap = {
+  "CA": {
+    "name": "Canada",
+    "zones": [
+      "America/St_Johns",
+      "America/Halifax",
+      "America/Glace_Bay",
+      "America/Moncton",
+      "America/Goose_Bay",
+      "America/Toronto",
+      "America/Iqaluit",
+      "America/Winnipeg",
+      "America/Resolute",
+      "America/Rankin_Inlet",
+      "America/Regina",
+      "America/Swift_Current",
+      "America/Edmonton",
+      "America/Cambridge_Bay",
+      "America/Inuvik",
+      "America/Dawson_Creek",
+      "America/Fort_Nelson",
+      "America/Whitehorse",
+      "America/Dawson",
+      "America/Vancouver",
+      "America/Panama",
+      "America/Puerto_Rico",
+      "America/Phoenix",
+      "America/Blanc-Sablon",
+      "America/Atikokan",
+      "America/Creston"
+    ]
+  },
+  "LK": {
+    "name": "Sri Lanka",
+    "zones": [
+      "Asia/Colombo"
+    ]
+  },
+  "AU": {
+    "name": "Australia",
+    "zones": [
+      "Australia/Lord_Howe",
+      "Antarctica/Macquarie",
+      "Australia/Hobart",
+      "Australia/Melbourne",
+      "Australia/Sydney",
+      "Australia/Broken_Hill",
+      "Australia/Brisbane",
+      "Australia/Lindeman",
+      "Australia/Adelaide",
+      "Australia/Darwin",
+      "Australia/Perth",
+      "Australia/Eucla"
+    ]
+  }
+};
+function getCountryCodeByTimeZone(timeZone: string) {
+  for (const [countryCode, countryData] of Object.entries(timeZoneToCountryMap)) {
+    if (countryData.zones.includes(timeZone)) {
+      return countryCode;
+    }
+  }
+  return null;
+}
+
 interface IndexPageProps {
   nodes: DrupalNode[];
-  country: string;
 }
 
-export async function getCountryFromIP(ip: string) {
-  try {
-    const response = await axios.get(`https://ipinfo.io/${ip}/country`);
-    const country = response.data.trim();
-    return country;
-  } catch (error) {
-    console.error('Error fetching country:', error);
-    return null;
-  }
-}
+export default function IndexPage({ nodes}: IndexPageProps) {
 
-export default function IndexPage({ nodes, country }: IndexPageProps) {
   return (
     <Layout>
-      {country ? (
-        <p style={{ fontSize: '20px', bottom: '40px' }}>Your country: {country}</p>
-      ) : (
-        <p style={{ fontSize: '20px', bottom: '40px' }}>Loading...</p>
-      )}
       <div>
         {nodes?.length ? (
           nodes.map((node) => (
@@ -48,21 +93,12 @@ export default function IndexPage({ nodes, country }: IndexPageProps) {
   )
 }
 
-export async function getStaticProps(
-  context
-): Promise<GetStaticPropsResult<IndexPageProps>> {
+export const getServerSideProps: GetServerSideProps<IndexPageProps> = async (context): Promise<GetServerSidePropsResult<IndexPageProps>> => {
+  
+  const timeZone= Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const country = getCountryCodeByTimeZone(timeZone);
 
-  let country = '';
-
-  try {
-    const { data } = await axios.get(`http://localhost:3000/api/get-ip`);
-    let ip = data.ip;
-    country = await getCountryFromIP(ip);
-  } catch (error) {
-    console.error('Error fetching IP or country:', error);
-  }
-
-  let filterParams = {
+  let filterParams = {  
     "filter[status]": 1,
     "fields[node--article]": "title,path,field_image,uid,created,field_tags",
     include: "field_image,uid,field_tags",
@@ -77,11 +113,11 @@ export async function getStaticProps(
     "node--article",
     context,
     { params: filterParams }
-  )
+  );
+
   return {
     props: {
       nodes,
-      country
     },
-  }
+  };
 }
